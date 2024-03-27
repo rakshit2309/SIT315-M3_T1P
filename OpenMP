@@ -1,0 +1,200 @@
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include <mpi.h>
+#include <omp.h>
+
+using namespace std;
+
+void matrix_multiplication(int* A, int* B, int* result, int rows_A, int cols_A, int cols_B, int my_rank, int num_procs) {
+    int start_row = my_rank * (rows_A / num_procs);
+    int end_row = (my_rank + 1) * (rows_A / num_procs);
+    
+    for (int i = start_row; i < end_row; ++i) {
+        for (int j = 0; j < cols_B; ++j) {
+            int sum = 0;
+            for (int k = 0; k < cols_A; ++k) {
+                sum += A[i * cols_A + k] * B[k * cols_B + j];
+            }
+            result[i * cols_B + j] = sum;
+        }
+    }
+}
+
+int main(int argc, char* argv[]) {
+    MPI_Init(&argc, &argv);
+
+    int my_rank, num_procs;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+
+    if (num_procs < 2) {
+        cout << "This program requires at least 2 processes." << endl;
+        MPI_Finalize();
+        return 1;
+    }
+
+    const int rows_A = 3;
+    const int cols_A = 3;
+    const int cols_B = 3;
+
+    int* A = nullptr;
+    int* B = nullptr;
+    int* result = nullptr;
+
+    if (my_rank == 0) {
+        A = new int[rows_A * cols_A];
+        B = new int[cols_A * cols_B];
+        result = new int[rows_A * cols_B];
+
+        srand(time(NULL));
+        for (int i = 0; i < rows_A * cols_A; ++i) {
+            A[i] = rand() % 10; // Random numbers between 0 and 9
+        }
+        for (int i = 0; i < cols_A * cols_B; ++i) {
+            B[i] = rand() % 10; // Random numbers between 0 and 9
+        }
+    }
+
+    MPI_Bcast(&rows_A, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&cols_A, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&cols_B, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    if (my_rank != 0) {
+        A = new int[rows_A * cols_A];
+        B = new int[cols_A * cols_B];
+    }
+
+    MPI_Bcast(A, rows_A * cols_A, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(B, cols_A * cols_B, MPI_INT, 0, MPI_COMM_WORLD);
+
+    result = new int[rows_A * cols_B];
+    matrix_multiplication(A, B, result, rows_A, cols_A, cols_B, my_rank, num_procs);
+
+    int* gathered_result = nullptr;
+    if (my_rank == 0) {
+        gathered_result = new int[rows_A * cols_B];
+    }
+    MPI_Gather(result, rows_A * cols_B / num_procs, MPI_INT, gathered_result, rows_A * cols_B / num_procs, MPI_INT, 0, MPI_COMM_WORLD);
+
+    if (my_rank == 0) {
+        cout << "Result of matrix multiplication:" << endl;
+        for (int i = 0; i < rows_A; ++i) {
+            for (int j = 0; j < cols_B; ++j) {
+                cout << gathered_result[i * cols_B + j] << " ";
+            }
+            cout << endl;#include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include <mpi.h>
+#include <omp.h>
+
+using namespace std;
+
+void matrix_multiplication(int* A, int* B, int* result, int rows_A, int cols_A, int cols_B, int my_rank, int num_procs) {
+    int start_row = my_rank * (rows_A / num_procs);
+    int end_row = (my_rank + 1) * (rows_A / num_procs);
+    
+    for (int i = start_row; i < end_row; ++i) {
+        for (int j = 0; j < cols_B; ++j) {
+            int sum = 0;
+            for (int k = 0; k < cols_A; ++k) {
+                sum += A[i * cols_A + k] * B[k * cols_B + j];
+            }
+            result[i * cols_B + j] = sum;
+        }
+    }
+}
+
+int main(int argc, char* argv[]) {
+    MPI_Init(&argc, &argv);
+
+    int my_rank, num_procs;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+
+    if (num_procs < 2) {
+        cout << "This program requires at least 2 processes." << endl;
+        MPI_Finalize();
+        return 1;
+    }
+
+    const int rows_A = 3;
+    const int cols_A = 3;
+    const int cols_B = 3;
+
+    int* A = nullptr;
+    int* B = nullptr;
+    int* result = nullptr;
+
+    if (my_rank == 0) {
+        A = new int[rows_A * cols_A];
+        B = new int[cols_A * cols_B];
+        result = new int[rows_A * cols_B];
+
+        srand(time(NULL));
+        for (int i = 0; i < rows_A * cols_A; ++i) {
+            A[i] = rand() % 10; // Random numbers between 0 and 9
+        }
+        for (int i = 0; i < cols_A * cols_B; ++i) {
+            B[i] = rand() % 10; // Random numbers between 0 and 9
+        }
+    }
+
+    MPI_Bcast(&rows_A, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&cols_A, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&cols_B, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    if (my_rank != 0) {
+        A = new int[rows_A * cols_A];
+        B = new int[cols_A * cols_B];
+    }
+
+    MPI_Bcast(A, rows_A * cols_A, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(B, cols_A * cols_B, MPI_INT, 0, MPI_COMM_WORLD);
+
+    result = new int[rows_A * cols_B];
+    matrix_multiplication(A, B, result, rows_A, cols_A, cols_B, my_rank, num_procs);
+
+    int* gathered_result = nullptr;
+    if (my_rank == 0) {
+        gathered_result = new int[rows_A * cols_B];
+    }
+    MPI_Gather(result, rows_A * cols_B / num_procs, MPI_INT, gathered_result, rows_A * cols_B / num_procs, MPI_INT, 0, MPI_COMM_WORLD);
+
+    if (my_rank == 0) {
+        cout << "Result of matrix multiplication:" << endl;
+        for (int i = 0; i < rows_A; ++i) {
+            for (int j = 0; j < cols_B; ++j) {
+                cout << gathered_result[i * cols_B + j] << " ";
+            }
+            cout << endl;
+        }
+        delete[] A;
+        delete[] B;
+        delete[] result;
+        delete[] gathered_result;
+    } else {
+        delete[] A;
+        delete[] B;
+        delete[] result;
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+
+        }
+        delete[] A;
+        delete[] B;
+        delete[] result;
+        delete[] gathered_result;
+    } else {
+        delete[] A;
+        delete[] B;
+        delete[] result;
+    }
+
+    MPI_Finalize();
+    return 0;
+}

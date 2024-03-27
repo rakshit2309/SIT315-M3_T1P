@@ -1,0 +1,72 @@
+#include <iostream>
+#include <vector>
+#include <mpi.h>
+
+using namespace std;
+
+vector<vector<int>> matrix_multiplication(const vector<vector<int>>& A, const vector<vector<int>>& B, int rows_A, int cols_A, int cols_B, int my_rank, int num_procs) {
+    vector<vector<int>> result(rows_A, vector<int>(cols_B, 0));
+
+    for (int i = my_rank; i < rows_A; i += num_procs) {
+        for (int j = 0; j < cols_B; ++j) {
+            for (int k = 0; k < cols_A; ++k) {
+                result[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+
+    return result;
+}
+
+int main(int argc, char* argv[]) {
+    MPI_Init(&argc, &argv);
+
+    int my_rank, num_procs;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+
+    if (num_procs < 2) {
+        cout << "This program requires at least 2 processes." << endl;
+        MPI_Finalize();
+        return 1;
+    }
+
+    // Example matrices A and B
+    vector<vector<int>> A = {{1, 2, 3},
+                              {4, 5, 6},
+                              {7, 8, 9}};
+
+    vector<vector<int>> B = {{9, 8, 7},
+                              {6, 5, 4},
+                              {3, 2, 1}};
+
+    int rows_A = A.size();
+    int cols_A = A[0].size();
+    int cols_B = B[0].size();
+
+    // Broadcast dimensions to all processes
+    MPI_Bcast(&rows_A, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&cols_A, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&cols_B, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    // Perform matrix multiplication
+    vector<vector<int>> partial_result = matrix_multiplication(A, B, rows_A, cols_A, cols_B, my_rank, num_procs);
+
+    // Gather all partial results from all processes
+    vector<vector<int>> result(rows_A, vector<int>(cols_B, 0));
+    MPI_Reduce(partial_result.data(), result.data(), rows_A * cols_B, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    // Display the result in process 0
+    if (my_rank == 0) {
+        cout << "Result of matrix multiplication:" << endl;
+        for (const auto& row : result) {
+            for (int val : row) {
+                cout << val << " ";
+            }
+            cout << endl;
+        }
+    }
+
+    MPI_Finalize();
+    return 0;
+}

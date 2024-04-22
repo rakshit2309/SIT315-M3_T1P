@@ -7,7 +7,18 @@
 #define N 10000
 
 void matrix_multiply(int *A, int *B, int *C, int size) {
-    // Your existing matrix multiplication code remains unchanged
+     int start_row = my_rank * (rows_A / num_procs);
+    int end_row = (my_rank + 1) * (rows_A / num_procs);
+    
+    for (int i = start_row; i < end_row; ++i) {
+        for (int j = 0; j < cols_B; ++j) {
+            int sum = 0;
+            for (int k = 0; k < cols_A; ++k) {
+                sum += A[i * cols_A + k] * B[k * cols_B + j];
+            }
+            result[i * cols_B + j] = sum;
+        }
+    }
 }
 
 int main(int argc, char **argv) {
